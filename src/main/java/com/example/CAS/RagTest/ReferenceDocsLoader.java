@@ -29,38 +29,42 @@ public class ReferenceDocsLoader {
     }
 
     @PostConstruct
-    public void init() {
-        try {
-            if (isPdfAlreadyEmbedded()) {
-                log.info("✅ PDF embeddings already exist. Skipping reloading and chunking.");
-                return;
-            }
-
-            log.info("📄 Loading and embedding Spring Boot PDF into Qdrant...");
-
-            var config = PdfDocumentReaderConfig.builder()
-                    .withPageExtractedTextFormatter(new ExtractedTextFormatter.Builder()
-                            .withNumberOfBottomTextLinesToDelete(0)
-                            .withNumberOfTopPagesToSkipBeforeDelete(0)
-                            .build())
-                    .withPagesPerDocument(1)
-                    .build();
-
-            var pdfReader = new PagePdfDocumentReader(pdfResource, config);
-            var docs = pdfReader.get();
-
-            var textSplitter = new TokenTextSplitter();
-            var chunks = textSplitter.apply(docs);
-
-            vectorStore.accept(chunks);
-
-            chunks.forEach(doc -> log.info("🔹 Chunk: " + doc.getFormattedContent()));
-            log.info("✅ PDF successfully embedded into Qdrant. Total chunks: {}", chunks.size());
-
-        } catch (Exception e) {
-            log.error("❌ Error loading PDF into Qdrant", e);
+public void init() {
+    try {
+        if (isPdfAlreadyEmbedded()) {
+            log.info("✅ PDF embeddings already exist. Skipping reloading and chunking.");
+            return;
         }
+
+        log.info("📄 Loading and embedding Spring Boot PDF into Qdrant...");
+
+        var config = PdfDocumentReaderConfig.builder()
+                .withPageExtractedTextFormatter(new ExtractedTextFormatter.Builder()
+                        .withNumberOfBottomTextLinesToDelete(0)
+                        .withNumberOfTopPagesToSkipBeforeDelete(0)
+                        .build())
+                .withPagesPerDocument(1)
+                .build();
+
+        var pdfReader = new PagePdfDocumentReader(pdfResource, config);
+        var docs = pdfReader.get();
+
+        var textSplitter = new TokenTextSplitter(1000, 20, 100, Integer.MAX_VALUE, false);
+        var chunks = textSplitter.apply(docs);
+
+        vectorStore.accept(chunks);
+
+        for (int i = 0; i < Math.min(5, chunks.size()); i++) {
+            log.info("🔹 Chunk {}: {}", i + 1, chunks.get(i).getFormattedContent());
+        }
+
+        log.info("PDF successfully embedded into Qdrant. Total chunks: {}", chunks.size());
+
+    } catch (Exception e) {
+        log.error("❌ Error loading PDF into Qdrant", e);
     }
+}
+
 
     private boolean isPdfAlreadyEmbedded() {
         try {
