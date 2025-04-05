@@ -10,10 +10,9 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.shell.command.annotation.CommandScan;
 import org.springframework.shell.standard.ShellComponent;
 
-@ImportRuntimeHints(HintsRegistrar.class)
-@ShellComponent
 @CommandScan
 @SpringBootApplication
+@ImportRuntimeHints(HintsRegistrar.class)
 public class RagTestApplication {
 
 	private static final Logger log = LoggerFactory.getLogger(RagTestApplication.class);
