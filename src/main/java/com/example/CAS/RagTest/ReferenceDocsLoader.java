@@ -2,6 +2,7 @@ package com.example.CAS.RagTest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.ExtractedTextFormatter;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
@@ -38,23 +39,28 @@ public class ReferenceDocsLoader {
 
             log.info("📄 Loading and embedding Spring Boot PDF into Qdrant...");
 
+            // Configure PDF reader with optional text cleaning
             var config = PdfDocumentReaderConfig.builder()
-                    .withPageExtractedTextFormatter(new ExtractedTextFormatter.Builder()
-                            .withNumberOfBottomTextLinesToDelete(0)
-                            .withNumberOfTopPagesToSkipBeforeDelete(0)
-                            .build())
-                    .withPagesPerDocument(1)
-                    .build();
+    .withPageExtractedTextFormatter(new ExtractedTextFormatter.Builder()
+        .withNumberOfBottomTextLinesToDelete(2)
+        .withNumberOfTopPagesToSkipBeforeDelete(2)
+        .build())
+    .withPagesPerDocument(1)
+    .build();
 
-            var pdfReader = new PagePdfDocumentReader(pdfResource, config);
-            var docs = pdfReader.get();
 
-            var textSplitter = new TokenTextSplitter();
-            var chunks = textSplitter.apply(docs);
+            PagePdfDocumentReader pdfReader = new PagePdfDocumentReader(pdfResource, config);
+            List<Document> allDocs = pdfReader.get();
+
+            int limitPages = 50;
+            List<Document> docs = allDocs.subList(0, Math.min(limitPages, allDocs.size()));
+
+            var textSplitter = new TokenTextSplitter(1500, 200, 200, Integer.MAX_VALUE, false);
+            List<Document> chunks = textSplitter.apply(docs);
 
             vectorStore.accept(chunks);
-
             chunks.forEach(doc -> log.info("🔹 Chunk: " + doc.getFormattedContent()));
+
             log.info("✅ PDF successfully embedded into Qdrant. Total chunks: {}", chunks.size());
 
         } catch (Exception e) {
@@ -64,7 +70,7 @@ public class ReferenceDocsLoader {
 
     private boolean isPdfAlreadyEmbedded() {
         try {
-            List<org.springframework.ai.document.Document> vectors = vectorStore.similaritySearch("Spring Boot");
+            List<Document> vectors = vectorStore.similaritySearch("Spring Boot");
             return !vectors.isEmpty();
         } catch (Exception e) {
             log.warn("⚠️ Error checking Qdrant for existing embeddings. Assuming it’s empty.", e);
