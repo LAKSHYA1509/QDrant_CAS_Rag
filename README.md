@@ -143,6 +143,9 @@ For detailed cost breakdown and charts:
 
 ---
 
+## Image to describe cost reduction
+![Cost Analysis](https://github.com/LAKSHYA1509/QDrant_CAS_Rag/blob/main/src/main/resources/prompts/a4c30c82-b5ed-4e1b-a6f5-40abdb192510.png?raw=true)
+
 ## 📌 Use Cases
 
 - **Educational AI Tools**: Embed textbooks, manuals, and allow question-answering.
